@@ -706,6 +706,24 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
         ? <GranularityType>this.visualSettings.granularity.granularity.value.value
         : GranularityType.month;
 
+      // Default to the current period when there's no active filter and the toggle is on
+      const noFilterActive =
+        !adjustedPeriod.period.startDate && !adjustedPeriod.period.endDate;
+
+      if (noFilterActive && this.visualSettings.forceSelection.currentPeriod.value) {
+        const today = Utils.RESET_TIME(new Date());
+        const { startDate: s, endDate: e } =
+          Timeline.SELECT_PERIOD(this.datePeriod, granularity, this.calendar, today);
+
+        if (s && e) {
+          adjustedPeriod.period.startDate = s;
+          adjustedPeriod.period.endDate = e;
+        }
+      }
+
+
+
+
       const isCurrentPeriodSelected: boolean =
         !this.isForceSelectionReset && this.visualSettings.forceSelection.currentPeriod.value;
       const isLatestAvailableDateSelected: boolean =
@@ -1355,12 +1373,12 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
         }
       }
 
-      if (settings.labels.displayAll.value || granularityType === GranularityType.quarter) {
-        this.renderLabels(extendedLabels.quarterLabels, this.quarterLabelsSelection, this.calculateYOffset(yPos), granularityType === 1);
-        if (granularityType >= GranularityType.quarter) {
-          yPos += yDiff;
-        }
-      }
+      // if (settings.labels.displayAll.value || granularityType === GranularityType.quarter) {
+      //   this.renderLabels(extendedLabels.quarterLabels, this.quarterLabelsSelection, this.calculateYOffset(yPos), granularityType === 1);
+      //   if (granularityType >= GranularityType.quarter) {
+      //     yPos += yDiff;
+      //   }
+      // }
 
       if (settings.labels.displayAll.value || granularityType === GranularityType.month) {
         this.renderLabels(extendedLabels.monthLabels, this.monthLabelsSelection, this.calculateYOffset(yPos), granularityType === 2);
@@ -1515,13 +1533,7 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
   }
 
   private toggleForceSelectionOptions(): void {
-    const isForceSelectionTurnedOn: boolean =
-      this.visualSettings.forceSelection.currentPeriod.value ||
-      this.visualSettings.forceSelection.latestAvailableDate.value;
-
-    if (isForceSelectionTurnedOn) {
-      this.turnOffForceSelectionOptions();
-    }
+      // no-op: keep "Force selection" toggles as the user's persistent preference
   }
 
   private turnOffForceSelectionOptions(): void {
