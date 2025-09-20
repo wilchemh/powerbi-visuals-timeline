@@ -1,8 +1,12 @@
 # Timeline Slicer
+
+# Modified to force single selection so we can have unified date slicer UI/UX across pages that support both Range Selection and Single Selection
+
 [![build status](https://github.com/microsoft/powerbi-visuals-timeline/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/microsoft/powerbi-visuals-timeline/actions/workflows/build.yml)
 
 > Graphical date selector to use for filtering dates
-> Modified to force single selection so we can have unified date filters across pages that support range filtering vs single selection filtering
+
+
 
 ![Timeline Slicer screenshot](./assets/screenshot.png)
 
