@@ -760,10 +760,10 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
 
 
             // Collapse any existing range to a single cell before first render
-            // if (this.timelineData.selectionEndIndex !== this.timelineData.selectionStartIndex) {
-            //     this.timelineData.selectionEndIndex = this.timelineData.selectionStartIndex;
-            //     this.updateCursors(this.timelineData);
-            // }
+            if (this.timelineData.selectionEndIndex !== this.timelineData.selectionStartIndex) {
+                this.timelineData.selectionEndIndex = this.timelineData.selectionStartIndex;
+                this.updateCursors(this.timelineData);
+            }
 
             this.render(
                 this.timelineData,

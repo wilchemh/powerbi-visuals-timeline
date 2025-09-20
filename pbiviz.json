@@ -1,10 +1,10 @@
 {
   "visual": {
     "name": "Timeline",
-    "displayName": "Timeline 3.0.0.7",
+    "displayName": "Timeline 3.0.0.8",
     "guid": "TimelineSingleMonthMW001",
     "visualClassName": "Timeline",
-    "version": "3.0.0.7",
+    "version": "3.0.0.8",
     "description": "Timeline slicer is a graphical date range selector used as a filtering component in the report canvas",
     "supportUrl": "https://community.powerbi.com",
     "gitHubUrl": "https://github.com/Microsoft/powerbi-visuals-timeline"
