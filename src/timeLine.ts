@@ -1361,51 +1361,65 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
 
   private renderBunchOfLabels(settings: TimeLineSettingsModel): number {
     const extendedLabels = this.timelineData.currentGranularity.getExtendedLabel();
+
+    // Hard-disable quarters
+    extendedLabels.quarterLabels = [];
+
     const granularityType = this.timelineData.currentGranularity.getType();
     const yDiff: number = Timeline.DefaultYDiff;
     let yPos: number = 0;
 
     if (settings.labels.show.value) {
-      if (settings.labels.displayAll.value || granularityType === GranularityType.year) {
-        this.renderLabels(extendedLabels.yearLabels, this.yearLabelsSelection, this.calculateYOffset(yPos), granularityType === 0);
-        if (granularityType >= GranularityType.year) {
-          yPos += yDiff;
+        // Year row (keep)
+        if (settings.labels.displayAll.value || granularityType === GranularityType.year) {
+            this.renderLabels(
+                extendedLabels.yearLabels,
+                this.yearLabelsSelection,
+                this.calculateYOffset(yPos),
+                granularityType === GranularityType.year
+            );
+            if (granularityType >= GranularityType.year) yPos += yDiff;
         }
-      }
 
-      // if (settings.labels.displayAll.value || granularityType === GranularityType.quarter) {
-      //   this.renderLabels(extendedLabels.quarterLabels, this.quarterLabelsSelection, this.calculateYOffset(yPos), granularityType === 1);
-      //   if (granularityType >= GranularityType.quarter) {
-      //     yPos += yDiff;
-      //   }
-      // }
+        // Quarter row intentionally removed
 
-      if (settings.labels.displayAll.value || granularityType === GranularityType.month) {
-        this.renderLabels(extendedLabels.monthLabels, this.monthLabelsSelection, this.calculateYOffset(yPos), granularityType === 2);
-        if (granularityType >= GranularityType.month) {
-          yPos += yDiff;
+        // Month row (keep)
+        if (settings.labels.displayAll.value || granularityType === GranularityType.month) {
+            this.renderLabels(
+                extendedLabels.monthLabels,
+                this.monthLabelsSelection,
+                this.calculateYOffset(yPos),
+                granularityType === GranularityType.month
+            );
+            if (granularityType >= GranularityType.month) yPos += yDiff;
         }
-      }
 
-      if (settings.labels.displayAll.value || granularityType === GranularityType.week) {
-        this.renderLabels(extendedLabels.weekLabels, this.weekLabelsSelection, this.calculateYOffset(yPos), granularityType === 3);
-        if (granularityType >= GranularityType.week) {
-          yPos += yDiff;
+        // Week row (unchanged)
+        if (settings.labels.displayAll.value || granularityType === GranularityType.week) {
+            this.renderLabels(
+                extendedLabels.weekLabels,
+                this.weekLabelsSelection,
+                this.calculateYOffset(yPos),
+                granularityType === GranularityType.week
+            );
+            if (granularityType >= GranularityType.week) yPos += yDiff;
         }
-      }
 
-      if (settings.labels.displayAll.value || granularityType === GranularityType.day) {
-        this.renderLabels(extendedLabels.dayLabels, this.dayLabelsSelection, this.calculateYOffset(yPos), granularityType === 4);
-        if (granularityType >= GranularityType.day) {
-          yPos += yDiff;
+        // Day row (unchanged)
+        if (settings.labels.displayAll.value || granularityType === GranularityType.day) {
+            this.renderLabels(
+                extendedLabels.dayLabels,
+                this.dayLabelsSelection,
+                this.calculateYOffset(yPos),
+                granularityType === GranularityType.day
+            );
+            if (granularityType >= GranularityType.day) yPos += yDiff;
         }
-      }
     }
 
     yPos -= 1;
-
     return yPos;
-  }
+}
 
   private calculateYOffset(index: number): number {
     if (!this.visualSettings.labels.show.value) {
