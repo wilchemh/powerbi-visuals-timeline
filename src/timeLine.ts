@@ -723,7 +723,7 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
       }
 
 
-
+/*
 
       const isCurrentPeriodSelected: boolean =
         !this.isForceSelectionReset && this.visualSettings.forceSelection.currentPeriod.value;
@@ -731,7 +731,8 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
         !this.isForceSelectionReset && this.visualSettings.forceSelection.latestAvailableDate.value;
       const isForceSelected: boolean =
         !this.isForceSelectionReset && (isCurrentPeriodSelected || isLatestAvailableDateSelected);
-      this.isForceSelectionReset = false; // Reset it to default state to allow re-enabling Force Selection
+
+      // this.isForceSelectionReset = false; // Reset it to default state to allow re-enabling Force Selection
       let currentForceSelectionResult = { startDate: null, endDate: null };
 
       if (isCurrentPeriodSelected) {
@@ -747,6 +748,44 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
         ({ endDate: adjustedPeriod.period.endDate, startDate: adjustedPeriod.period.startDate } =
           Timeline.SELECT_PERIOD(datePeriod, granularity, this.calendar, this.datePeriod.endDate));
       }
+
+
+*/
+
+
+      // --- FORCE SELECTION only when there's NO slicer filter active ---
+      const hasSlicerFilter =
+        !!adjustedPeriod.period.startDate && !!adjustedPeriod.period.endDate;
+
+      let forcedStart: Date = null;
+      let forcedEnd: Date = null;
+
+      if (!hasSlicerFilter) {
+        if (this.visualSettings.forceSelection.currentPeriod.value) {
+          ({ startDate: forcedStart, endDate: forcedEnd } =
+            Timeline.SELECT_CURRENT_PERIOD(datePeriod, granularity, this.calendar));
+        } else if (this.visualSettings.forceSelection.latestAvailableDate.value) {
+          adjustedPeriod.period.endDate = adjustedPeriod.adaptedDataEndDate;
+          ({ startDate: forcedStart, endDate: forcedEnd } =
+            Timeline.SELECT_PERIOD(datePeriod, granularity, this.calendar, this.datePeriod.endDate));
+        }
+      }
+
+      // If we decided to force, overwrite the period; otherwise leave user's filter alone
+      if (forcedStart && forcedEnd) {
+        adjustedPeriod.period.startDate = forcedStart;
+        adjustedPeriod.period.endDate   = forcedEnd;
+      }
+
+      // Tell updatePrevFilterState whether we actually forced this run
+      const isForceSelected =
+        !hasSlicerFilter &&
+        (this.visualSettings.forceSelection.currentPeriod.value ||
+        this.visualSettings.forceSelection.latestAvailableDate.value);
+
+
+
+
 
       this.updatePrevFilterState(adjustedPeriod, isForceSelected, this.timelineData.filterColumnTarget);
 
@@ -1125,7 +1164,7 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
     this.updateCursors(this.timelineData);
 
     this.setSelection(this.timelineData);
-    this.toggleForceSelectionOptions();
+    // this.toggleForceSelectionOptions();
   }
 
   private updatePrevFilterState(
@@ -1557,7 +1596,7 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
     this.renderTimeRangeText(timelineData, this.visualSettings.rangeHeader);
 
     this.setSelection(timelineData);
-    this.toggleForceSelectionOptions();
+    // this.toggleForceSelectionOptions();
   }
 
   private scrollAutoFocusFunc(selectedGranulaPos: number): void {
