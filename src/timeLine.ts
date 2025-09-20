@@ -577,6 +577,11 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
   private lastCommittedEndIndex: number | null = null;
   private selectionChangeByClick: boolean = false;
 
+  // Track previous Force selection toggles so we can detect "turned on now"
+  private prevForceCurrent: boolean | null = null;
+  private prevForceLatest:  boolean | null = null;
+
+
   constructor(options: powerbiVisualsApi.extensibility.visual.VisualConstructorOptions) {
     const element: HTMLElement = options.element;
 
@@ -767,7 +772,9 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
 */
 
 
-      //REPLACE ABOVE WITH BELOW BLOCK
+      // TRY 1 REPLACE ABOVE WITH BELOW BLOCK
+
+/*
       // --- Force default ONLY when there is NO active slicer filter ---
       const hasSlicerFilter =
         !!adjustedPeriod.period.startDate && !!adjustedPeriod.period.endDate;
@@ -805,6 +812,62 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
 
 
       this.updatePrevFilterState(adjustedPeriod, didForce, this.timelineData.filterColumnTarget);
+
+
+*/
+
+
+      // TRY 2 REPLACE ABOVE WITH BELOW BLOCK
+
+      // --- Apply "Force selection" ---
+      // If no slicer filter is active -> force as default.
+      // If user just toggled ON -> override immediately even if a filter exists.
+      const hasSlicerFilter =
+        !!adjustedPeriod.period.startDate && !!adjustedPeriod.period.endDate;
+
+      const currentToggle = !!this.visualSettings.forceSelection.currentPeriod.value;
+      const latestToggle  = !!this.visualSettings.forceSelection.latestAvailableDate.value;
+
+      // detect “turned ON now”
+      const toggledCurrentOn = this.prevForceCurrent !== null && !this.prevForceCurrent && currentToggle;
+      const toggledLatestOn  = this.prevForceLatest  !== null && !this.prevForceLatest  && latestToggle;
+
+      // allow override when no filter, or when just toggled ON
+      const allowOverride = !hasSlicerFilter || toggledCurrentOn || toggledLatestOn;
+
+      let didForce = false;
+
+      if (allowOverride) {
+        if (currentToggle) {
+          const { startDate: s, endDate: e } =
+            Timeline.SELECT_CURRENT_PERIOD(datePeriod, granularity, this.calendar);
+          if (s && e) {
+            adjustedPeriod.period.startDate = s;
+            adjustedPeriod.period.endDate   = e;
+            // push filter & sync UI immediately
+            this.applyDatePeriod(s, e, this.timelineData.filterColumnTarget);
+            this.setSelectionToDateRange(s, e);
+            didForce = true;
+          }
+        } else if (latestToggle) {
+          adjustedPeriod.period.endDate = adjustedPeriod.adaptedDataEndDate;
+          const { startDate: s2, endDate: e2 } =
+            Timeline.SELECT_PERIOD(datePeriod, granularity, this.calendar, this.datePeriod.endDate);
+          if (s2 && e2) {
+            adjustedPeriod.period.startDate = s2;
+            adjustedPeriod.period.endDate   = e2;
+            this.applyDatePeriod(s2, e2, this.timelineData.filterColumnTarget);
+            this.setSelectionToDateRange(s2, e2);
+            didForce = true;
+          }
+        }
+      }
+
+
+      this.updatePrevFilterState(adjustedPeriod, didForce, this.timelineData.filterColumnTarget);
+
+      //END TRY 2
+
 
 
       if (!this.initialized) {
@@ -884,8 +947,15 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
 
     } catch (ex) {
       this.host.eventService.renderingFailed(options, JSON.stringify(ex));
+    } finally {
+      // Step D: snapshot toggle states for next run
+      this.prevForceCurrent = !!this.visualSettings?.forceSelection?.currentPeriod?.value;
+      this.prevForceLatest  = !!this.visualSettings?.forceSelection?.latestAvailableDate?.value;
+
+      this.host.eventService.renderingFinished(options);
     }
-    this.host.eventService.renderingFinished(options);
+    
+    //this.host.eventService.renderingFinished(options);
   }
 
 //END OF UPDATE FUNCTION
