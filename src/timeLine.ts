@@ -162,7 +162,8 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
         }
         if (!initialized) {
             this.timelineData.selectionStartIndex = 0;
-            this.timelineData.selectionEndIndex = this.timelineData.currentGranularity.getDatePeriods().length - 1;
+            this.timelineData.selectionEndIndex   = 0; // single cell, not full range
+            // this.timelineData.selectionEndIndex = this.timelineData.currentGranularity.getDatePeriods().length - 1;
         }
 
         const category: powerbiVisualsApi.DataViewCategoryColumn = dataView.categorical.categories[0];
@@ -953,9 +954,14 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
     }
 
     public setSelection(timelineData: ITimelineData): void {
+        // hard clamp to single cell always
+        if (timelineData.selectionEndIndex !== timelineData.selectionStartIndex) {
+            timelineData.selectionEndIndex = timelineData.selectionStartIndex;
+            this.updateCursors(timelineData);
+        }
+
         if (Utils.ARE_BOUNDS_OF_SELECTION_AND_AVAILABLE_DATES_THE_SAME(timelineData)) {
             this.clearSelection(timelineData.filterColumnTarget);
-
             return;
         }
 
