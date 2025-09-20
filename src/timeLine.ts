@@ -709,6 +709,12 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
         ? <GranularityType>this.visualSettings.granularity.granularity.value.value
         : GranularityType.month;
 
+
+//REPLACE BELOW BLOCK to TRY AND GET DEFAULT TO BE CURRENT PERIOD
+
+/*
+
+
       // Default to the current period when there's no active filter and the toggle is on
       const noFilterActive =
         !adjustedPeriod.period.startDate && !adjustedPeriod.period.endDate;
@@ -723,36 +729,6 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
           adjustedPeriod.period.endDate = e;
         }
       }
-
-
-/*
-
-      const isCurrentPeriodSelected: boolean =
-        !this.isForceSelectionReset && this.visualSettings.forceSelection.currentPeriod.value;
-      const isLatestAvailableDateSelected: boolean =
-        !this.isForceSelectionReset && this.visualSettings.forceSelection.latestAvailableDate.value;
-      const isForceSelected: boolean =
-        !this.isForceSelectionReset && (isCurrentPeriodSelected || isLatestAvailableDateSelected);
-
-      // this.isForceSelectionReset = false; // Reset it to default state to allow re-enabling Force Selection
-      let currentForceSelectionResult = { startDate: null, endDate: null };
-
-      if (isCurrentPeriodSelected) {
-        currentForceSelectionResult = ({ endDate: adjustedPeriod.period.endDate, startDate: adjustedPeriod.period.startDate } =
-          Timeline.SELECT_CURRENT_PERIOD(datePeriod, granularity, this.calendar));
-      }
-      if (
-        isLatestAvailableDateSelected &&
-        (!isCurrentPeriodSelected ||
-          (isCurrentPeriodSelected && !currentForceSelectionResult.startDate && !currentForceSelectionResult.endDate))
-      ) {
-        adjustedPeriod.period.endDate = adjustedPeriod.adaptedDataEndDate;
-        ({ endDate: adjustedPeriod.period.endDate, startDate: adjustedPeriod.period.startDate } =
-          Timeline.SELECT_PERIOD(datePeriod, granularity, this.calendar, this.datePeriod.endDate));
-      }
-
-
-*/
 
 
       // --- FORCE SELECTION only when there's NO slicer filter active ---
@@ -786,10 +762,50 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
         this.visualSettings.forceSelection.latestAvailableDate.value);
 
 
+      this.updatePrevFilterState(adjustedPeriod, isForceSelected, this.timelineData.filterColumnTarget);        
+
+*/
 
 
+      //REPLACE ABOVE WITH BELOW BLOCK
+      // --- Force default ONLY when there is NO active slicer filter ---
+      const hasSlicerFilter =
+        !!adjustedPeriod.period.startDate && !!adjustedPeriod.period.endDate;
 
-      this.updatePrevFilterState(adjustedPeriod, isForceSelected, this.timelineData.filterColumnTarget);
+      let didForce = false;
+
+      if (!hasSlicerFilter) {
+        if (this.visualSettings.forceSelection.currentPeriod.value) {
+          const { startDate: s, endDate: e } =
+            Timeline.SELECT_CURRENT_PERIOD(datePeriod, granularity, this.calendar);
+          if (s && e) {
+            adjustedPeriod.period.startDate = s;
+            adjustedPeriod.period.endDate   = e;
+
+            // apply the json filter now and sync the UI immediately
+            this.applyDatePeriod(s, e, this.timelineData.filterColumnTarget);
+            this.setSelectionToDateRange(s, e);
+            didForce = true;
+          }
+        } else if (this.visualSettings.forceSelection.latestAvailableDate.value) {
+          adjustedPeriod.period.endDate = adjustedPeriod.adaptedDataEndDate;
+          const { startDate: s2, endDate: e2 } =
+            Timeline.SELECT_PERIOD(datePeriod, granularity, this.calendar, this.datePeriod.endDate);
+          if (s2 && e2) {
+            adjustedPeriod.period.startDate = s2;
+            adjustedPeriod.period.endDate   = e2;
+
+            // apply the json filter now and sync the UI immediately
+            this.applyDatePeriod(s2, e2, this.timelineData.filterColumnTarget);
+            this.setSelectionToDateRange(s2, e2);
+            didForce = true;
+          }
+        }
+      }
+
+
+      this.updatePrevFilterState(adjustedPeriod, didForce, this.timelineData.filterColumnTarget);
+
 
       if (!this.initialized) {
         this.initialized = true;
@@ -871,6 +887,13 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
     }
     this.host.eventService.renderingFinished(options);
   }
+
+//END OF UPDATE FUNCTION
+
+
+
+
+
 
   public fillCells(visSettings: TimeLineSettingsModel): void {
     const dataPoints: ITimelineDataPoint[] = this.timelineData.timelineDataPoints;
