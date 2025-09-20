@@ -442,7 +442,8 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
     if (this.visualSettings.labels.show.value) {
       const granularityOffset: number = this.visualSettings.labels.displayAll.value ? granularityType + 1 : 1;
 
-      this.timelineProperties.cellsYPosition += labelSize * Timeline.LabelSizeFactor * granularityOffset;
+      // this.timelineProperties.cellsYPosition += labelSize * Timeline.LabelSizeFactor * granularityOffset;
+      this.timelineProperties.cellsYPosition += labelSize * Timeline.LabelSizeFactor * 2;
     }
 
     const svgHeight: number = Math.max(0, viewport.height - timelineMargins.TopMargin);
@@ -756,6 +757,8 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
       if (adjustedPeriod.period.startDate && adjustedPeriod.period.endDate) {
         this.changeGranularity(granularity, adjustedPeriod.period.startDate, adjustedPeriod.period.endDate);
         this.updateCalendar();
+        // NEW: sync UI to the forced dates so cursors/fill move too
+        this.setSelectionToDateRange(adjustedPeriod.period.startDate, adjustedPeriod.period.endDate);
       }
 
       this.renderGranularityFrame(granularity);
@@ -1141,6 +1144,25 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
     this.prevFilteredStartDate = adjustedPeriod.period.startDate;
     this.prevFilteredEndDate = adjustedPeriod.period.endDate;
   }
+
+  private setSelectionToDateRange(startDate: Date, endDate: Date): void {
+    if (!startDate || !endDate) return;
+
+    const idx = this.timelineData.timelineDataPoints.findIndex(
+      dp => dp.datePeriod.startDate.getTime() === startDate.getTime()
+    );
+
+    if (idx >= 0) {
+      this.timelineData.selectionStartIndex = idx;
+      this.timelineData.selectionEndIndex   = idx;
+      this.updateCursors(this.timelineData);
+
+      // keep drag-revert behavior in sync
+      (this as any).lastCommittedStartIndex = idx;
+      (this as any).lastCommittedEndIndex   = idx;
+    }
+  }
+
 
   private adjustFilterDatePeriod(): IAdjustedFilterDatePeriod {
     // It contains date boundaries that were taken from current slicer filter (filter range).
