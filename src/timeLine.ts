@@ -162,7 +162,8 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
         }
         if (!initialized) {
             this.timelineData.selectionStartIndex = 0;
-            this.timelineData.selectionEndIndex = this.timelineData.currentGranularity.getDatePeriods().length - 1;
+            this.timelineData.selectionEndIndex   = 0; // single cell, not full range
+            // this.timelineData.selectionEndIndex = this.timelineData.currentGranularity.getDatePeriods().length - 1;
         }
 
         const category: powerbiVisualsApi.DataViewCategoryColumn = dataView.categorical.categories[0];
@@ -752,6 +753,13 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
 
             this.renderGranularityFrame(granularity);
 
+
+            // Collapse any existing range to a single cell before first render
+            // if (this.timelineData.selectionEndIndex !== this.timelineData.selectionStartIndex) {
+            //     this.timelineData.selectionEndIndex = this.timelineData.selectionStartIndex;
+            //     this.updateCursors(this.timelineData);
+            // }
+
             this.render(
                 this.timelineData,
                 this.visualSettings,
@@ -946,9 +954,14 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
     }
 
     public setSelection(timelineData: ITimelineData): void {
+        // hard clamp to single cell always
+        if (timelineData.selectionEndIndex !== timelineData.selectionStartIndex) {
+            timelineData.selectionEndIndex = timelineData.selectionStartIndex;
+            this.updateCursors(timelineData);
+        }
+
         if (Utils.ARE_BOUNDS_OF_SELECTION_AND_AVAILABLE_DATES_THE_SAME(timelineData)) {
             this.clearSelection(timelineData.filterColumnTarget);
-
             return;
         }
 
@@ -1047,38 +1060,29 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
         this.visualSettings.granularity.granularity.value = selectedGranularity;
     }
 
-    public onCursorDrag(event: D3DragEvent<any, ICursorDataPoint, ICursorDataPoint>, currentCursor: ICursorDataPoint): void {
-        const mouseEvent: MouseEvent = event.sourceEvent;
-        const cursorOverElement: ITimelineCursorOverElement = this.findCursorOverElement(mouseEvent.x);
+public onCursorDrag(
+  event: D3DragEvent<any, ICursorDataPoint, ICursorDataPoint>,
+  _currentCursor: ICursorDataPoint
+): void {
+  const mouseEvent: MouseEvent = event.sourceEvent;
+  const over = this.findCursorOverElement(mouseEvent.x);
+  if (!over) return;
 
-        if (!cursorOverElement) {
-            return;
-        }
+  const idx = over.index;
+  const dp  = over.datapoint;
 
-        const currentlyMouseOverElement: ITimelineDataPoint = cursorOverElement.datapoint;
-        const currentlyMouseOverElementIndex: number = cursorOverElement.index;
+  // Force single-cell (month) selection on any drag
+  this.timelineData.selectionStartIndex = idx;
+  this.timelineData.selectionEndIndex   = idx;
 
-        if (currentCursor.cursorIndex === 0 && currentlyMouseOverElementIndex <= this.timelineData.selectionEndIndex) {
-            this.timelineData.selectionStartIndex = currentlyMouseOverElementIndex;
-            this.timelineData.cursorDataPoints[0].selectionIndex = currentlyMouseOverElement.datePeriod.index;
-        }
+  this.timelineData.cursorDataPoints[0].selectionIndex = dp.datePeriod.index;
+  this.timelineData.cursorDataPoints[1].selectionIndex = dp.datePeriod.index + dp.datePeriod.fraction;
 
-        if (currentCursor.cursorIndex === 1 && currentlyMouseOverElementIndex >= this.timelineData.selectionStartIndex) {
-            this.timelineData.selectionEndIndex = currentlyMouseOverElementIndex;
+  this.fillCells(this.visualSettings);
+  this.renderCursors(this.timelineData, this.timelineProperties.cellHeight, this.timelineProperties.cellsYPosition);
+  this.renderTimeRangeText(this.timelineData, this.visualSettings.rangeHeader);
+}
 
-            this.timelineData.cursorDataPoints[1].selectionIndex =
-                currentlyMouseOverElement.datePeriod.index + currentlyMouseOverElement.datePeriod.fraction;
-        }
-
-        this.fillCells(this.visualSettings);
-
-        this.renderCursors(
-            this.timelineData,
-            this.timelineProperties.cellHeight,
-            this.timelineProperties.cellsYPosition);
-
-        this.renderTimeRangeText(this.timelineData, this.visualSettings.rangeHeader);
-    }
 
     /**
      * Note: Public for testability.
@@ -1107,6 +1111,10 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
     }
 
     public onCursorDragEnd(): void {
+        // keep it single-cell after drag finishes
+        this.timelineData.selectionEndIndex = this.timelineData.selectionStartIndex;
+        this.updateCursors(this.timelineData);  // <-- yes, keep this
+
         this.setSelection(this.timelineData);
         this.toggleForceSelectionOptions();
     }
