@@ -768,8 +768,10 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
                 },
                 cursors: {
                     selection: this.cursorGroupSelection.selectAll(Timeline.TimelineSelectors.SelectionCursor.selectorName),
-                    onDrag: this.onCursorDrag.bind(this),
-                    onEnd: this.onCursorDragEnd.bind(this),
+                    onDrag: () => {}, // disabled: single-month click mode
+                    onEnd: () => {},  // disabled: single-month click mode
+                    // onDrag: this.onCursorDrag.bind(this),
+                    // onEnd: this.onCursorDragEnd.bind(this),
                 },
                 clearCatcher: this.rootSelection,
                 // spyOn changes clearUserSelection, anonymous function is used to have link to spied function
@@ -897,6 +899,8 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
                 }),
             )
             .style("fill", this.visualSettings.cursor.show.value ? this.visualSettings.cursor.color.value.value : "transparent")
+            .style("pointer-events", "none")  // Added to keep mouse pointer as defalut when cursor hovers so user doesn't think they are draggable
+            .style("cursor", "default")       // Added to keep mouse pointer as defalut when cursor hovers so user doesn't think they are draggable        
     }
 
     public renderTimeRangeText(timelineData: ITimelineData, rangeHeaderSettings: RangeHeaderSettingsCard): void {
@@ -1558,6 +1562,9 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
         isMultiSelection: boolean,
     ): void {
 
+        // always single month, ignore multi-selection keys
+        isMultiSelection = false;
+        
         const timelineData: ITimelineData = this.timelineData;
         const cursorDataPoints: ICursorDataPoint[] = timelineData.cursorDataPoints;
         const timelineProperties: ITimelineProperties = this.timelineProperties;
