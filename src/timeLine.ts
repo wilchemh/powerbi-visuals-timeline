@@ -161,9 +161,14 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
 
         }
         if (!initialized) {
-            this.timelineData.selectionStartIndex = 0;
-            this.timelineData.selectionEndIndex   = 0; // single cell, not full range
+            // this.timelineData.selectionStartIndex = 0;
+            // this.timelineData.selectionEndIndex   = 0; // single cell, not full range
             // this.timelineData.selectionEndIndex = this.timelineData.currentGranularity.getDatePeriods().length - 1;
+            const lastIdx = this.timelineData.currentGranularity.getDatePeriods().length - 1;
+
+            this.timelineData.selectionStartIndex = lastIdx;
+            this.timelineData.selectionEndIndex   = lastIdx;
+
         }
 
         const category: powerbiVisualsApi.DataViewCategoryColumn = dataView.categorical.categories[0];
