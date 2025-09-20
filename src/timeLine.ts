@@ -629,12 +629,14 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
   }
 
   public clearUserSelection(): void {
-    if (!this.initialized || !this.timelineData) {
-      return;
-    }
+    // Intentionally disabled: we never clear selection by background click/drag
 
-    this.clearSelection(this.timelineData.filterColumnTarget);
-    this.toggleForceSelectionOptions();
+    // if (!this.initialized || !this.timelineData) {
+    //   return;
+    // }
+
+    // this.clearSelection(this.timelineData.filterColumnTarget);
+    // this.toggleForceSelectionOptions();
   }
 
   public doesPeriodSlicerRectPositionNeedToUpdate(granularity: GranularityType): boolean {
@@ -819,6 +821,27 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
 
       this.render(this.timelineData, this.visualSettings, this.timelineProperties, options);
 
+      // REPLACED TO TRY AND FIX DRAG ATTEMPT CLEARING FILTER
+      // Behavior.bindEvents({
+      //   selectionManager: this.selectionManager,
+      //   cells: {
+      //     selection: this.mainGroupSelection.selectAll(Timeline.TimelineSelectors.CellRect.selectorName),
+      //     callback: this.onCellClickHandler.bind(this),
+      //     cellWidth: this.timelineProperties.cellWidth,
+      //   },
+      //   cursors: {
+      //     // pass an empty selection so no drag handlers get attached
+      //     selection: this.cursorGroupSelection.selectAll<SVGPathElement, any>(".__none__"),
+      //     onDrag: () => {},
+      //     onEnd: () => {},
+      //   },
+      //   clearCatcher: this.rootSelection,
+      //   // spyOn changes clearUserSelection, anonymous function is used to have link to spied function
+      //   clearSelectionHandler: () => {
+      //     this.clearUserSelection();
+      //   },
+      // });
+
       Behavior.bindEvents({
         selectionManager: this.selectionManager,
         cells: {
@@ -827,17 +850,22 @@ export class Timeline implements powerbiVisualsApi.extensibility.visual.IVisual 
           cellWidth: this.timelineProperties.cellWidth,
         },
         cursors: {
-          // pass an empty selection so no drag handlers get attached
+          // keep cursor drags disabled
           selection: this.cursorGroupSelection.selectAll<SVGPathElement, any>(".__none__"),
           onDrag: () => {},
           onEnd: () => {},
         },
-        clearCatcher: this.rootSelection,
-        // spyOn changes clearUserSelection, anonymous function is used to have link to spied function
-        clearSelectionHandler: () => {
-          this.clearUserSelection();
-        },
+        // IMPORTANT: disable background clear so drag doesn’t wipe selection
+        clearCatcher: this.rootSelection.selectAll(".__none__"),
+        clearSelectionHandler: () => {}, // no-op
       });
+
+
+
+
+
+
+
     } catch (ex) {
       this.host.eventService.renderingFailed(options, JSON.stringify(ex));
     }
